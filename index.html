@@ -8,56 +8,57 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background-color: #f4f4f4;
+      margin: 0;
       padding: 20px;
+      background-color: #f9f9f9;
     }
     #qr-reader {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
+      width: 300px;
+      margin: auto;
     }
-    #result {
+    #qr-result {
       margin-top: 20px;
-      font-size: 18px;
-      color: green;
+      font-size: 1.2em;
     }
   </style>
 </head>
 <body>
   <h1>QR Code Scanner</h1>
   <div id="qr-reader"></div>
-  <div id="result">Scanning...</div>
+  <div id="qr-result">Scanning...</div>
 
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <!-- Load the html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+
   <script>
+    const resultEl = document.getElementById('qr-result');
+    const qrReader = new Html5Qrcode("qr-reader");
+
     function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("result").innerText = "Scanned: " + decodedText;
+      console.log("QR Code scanned: ", decodedText);
+      resultEl.innerText = "Result: " + decodedText;
 
-      // Optional: open the URL (or send it to parent if in Wix)
-      if (decodedText.startsWith("http")) {
-        window.parent.postMessage({
-          type: "qrCode",
-          data: decodedText
-        }, "*");
-      }
+      // You could also send the result to a parent iframe:
+      window.parent.postMessage({ type: "qrCode", data: decodedText }, "*");
+
+      // Or redirect:
+      // window.location.href = decodedText;
     }
 
-    function onScanError(errorMessage) {
-      console.warn("QR Code scan error:", errorMessage);
-    }
-
-    const html5QrCode = new Html5Qrcode("qr-reader");
-    html5QrCode.start(
+    qrReader.start(
       { facingMode: "environment" },
       {
         fps: 10,
         qrbox: { width: 250, height: 250 }
       },
       onScanSuccess,
-      onScanError
+      (errorMessage) => {
+        // Optional scan error handling
+        console.warn("QR Scan Error:", errorMessage);
+      }
     ).catch(err => {
-      document.getElementById("result").innerText = "Camera error: " + err;
-      console.error("Camera init error:", err);
+      console.error("Failed to start QR reader:", err);
+      resultEl.innerText = "Camera access denied or not supported.";
     });
   </script>
 </body>
