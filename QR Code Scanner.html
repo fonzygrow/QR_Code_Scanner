@@ -3,125 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Code Scanner with Camera Selector</title>
+  <title>QR Code Scanner</title>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      flex-direction: column;
+    }
+    #qr-reader {
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
     video {
       width: 100%;
-      height: auto;
-    }
-    select {
-      margin-bottom: 10px;
-      padding: 5px;
+      max-width: 600px;
+      border: 1px solid #ccc;
     }
     #result {
-      margin-top: 10px;
-      font-size: 18px;
+      margin-top: 20px;
       text-align: center;
-      color: green;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
   <h1>QR Code Scanner</h1>
-  <select id="cameraSelect">
-    <option disabled selected>Select a camera</option>
-  </select>
-  <br />
-  <video id="video" autoplay playsinline></video>
+  <div id="qr-reader"></div>
   <div id="result"></div>
 
-  <!-- Load html5-qrcode from an alternative CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <!-- Include the QR code scanning library -->
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
   <script>
-    let videoStream = null;
-    const videoElement = document.getElementById('video');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const resultDiv = document.getElementById('result');
+    // Function to initialize the QR code scanner
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+      // Display the scanned QR code result
+      document.getElementById('result').innerHTML = `<strong>Scanned Result:</strong> ${decodedText}`;
 
-    // Retrieve all available video devices (cameras)
-    navigator.mediaDevices.enumerateDevices()
-      .then(devices => {
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        
-        // Populate the dropdown menu with the available cameras
-        videoDevices.forEach(device => {
-          const option = document.createElement('option');
-          option.value = device.deviceId;
-          option.textContent = device.label || `Camera ${cameraSelect.length + 1}`;
-          cameraSelect.appendChild(option);
-        });
-
-        // Start the video stream with the first available camera by default
-        if (videoDevices.length > 0) {
-          startCamera(videoDevices[0].deviceId);
-        }
-
-        // Switch camera when the user selects a different one
-        cameraSelect.addEventListener('change', (event) => {
-          const selectedDeviceId = event.target.value;
-          startCamera(selectedDeviceId);
-        });
-      })
-      .catch(err => {
-        console.error('Error enumerating devices: ', err);
-        document.body.innerHTML += "<p>Error enumerating devices: " + err.message + "</p>";
-      });
-
-    // Function to start the camera with the selected device ID
-    function startCamera(deviceId) {
-      // Stop any existing video stream before starting a new one
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
+      // Check if the result is a valid URL and open it in the same window
+      if (isValidURL(decodedText)) {
+        window.location.href = decodedText;  // Open URL in the same window
+      } else {
+        alert("QR code does not contain a valid URL.");
       }
+    };
 
-      // Get the selected video device
-      navigator.mediaDevices.getUserMedia({
-        video: { deviceId: deviceId }
-      })
+    const qrCodeErrorCallback = (errorMessage) => {
+      console.error("QR Code scanning error: ", errorMessage);
+      alert("Error scanning QR code: " + errorMessage);
+    };
+
+    // Initialize the QR Code scanner
+    const html5QrCode = new Html5Qrcode("qr-reader");
+
+    // Start the QR code scanner
+    html5QrCode.start(
+      { facingMode: "environment" },  // Use the back camera (or front camera as needed)
+      { fps: 10, qrbox: 250 },        // Adjust FPS and size of the scanning box
+      qrCodeSuccessCallback,
+      qrCodeErrorCallback
+    ).catch(err => {
+      console.error("Error starting QR scanner:", err);
+      alert("Error initializing the QR scanner: " + err);
+    });
+
+    // Helper function to check if a string is a valid URL
+    function isValidURL(str) {
+      const pattern = new RegExp('^(https?:\\/\\/)?([\\w\\d\\-]+\\.)+[\\w\\d\\-]+(\\/\\S*)?$');
+      return pattern.test(str);
+    }
+
+    // Debugging logs
+    console.log("QR Code Scanner initialized successfully.");
+
+    // Request camera access explicitly (testing purpose)
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
-        videoStream = stream;
+        console.log('Camera access granted.');
+        const videoElement = document.querySelector('video');
         videoElement.srcObject = stream;
-
-        // Initialize the QR code scanner
-        initializeQRCodeScanner(stream);
       })
       .catch(err => {
         console.error('Error accessing camera: ', err);
-        document.body.innerHTML += "<p>Error accessing camera: " + err.message + "</p>";
+        alert("Camera access denied: " + err.message);
       });
-    }
-
-    // Function to initialize QR code scanner
-    function initializeQRCodeScanner(stream) {
-      // Ensure that html5-qrcode is available before usage
-      if (typeof Html5Qrcode !== 'undefined') {
-        const html5QrCode = new Html5Qrcode("video");
-
-        html5QrCode.start(
-          { facingMode: "environment", deviceId: cameraSelect.value }, // Use the selected camera
-          { fps: 10, qrbox: 250 },  // Adjust FPS and size of the scanning box
-          qrCodeSuccessCallback,
-          qrCodeErrorCallback
-        ).catch(err => {
-          console.error("Error starting QR scanner:", err);
-          resultDiv.innerHTML = "Error starting QR scanner.";
-        });
-      } else {
-        console.error("Html5Qrcode is not loaded.");
-        resultDiv.innerHTML = "Error: Html5Qrcode is not loaded.";
-      }
-    }
-
-    // QR code success callback
-    function qrCodeSuccessCallback(decodedText, decodedResult) {
-      console.log(`QR Code detected: ${decodedText}`);
-      resultDiv.innerHTML = `Scanned QR Code: ${decodedText}`;
-    }
-
-    // QR code error callback
-    function qrCodeErrorCallback(errorMessage) {
-      console.error("QR Code scanning error: ", errorMessage);
-    }
   </script>
 </body>
 </html>
