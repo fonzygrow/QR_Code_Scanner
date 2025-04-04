@@ -4,96 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QR Code Scanner</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f0f0f0;
-      flex-direction: column;
-    }
-    #qr-reader {
-      width: 100%;
-      max-width: 600px;
-      border: 1px solid #ccc;
-      margin-bottom: 20px;
-    }
-    video {
-      width: 100%;
-      max-width: 600px;
-      border: 1px solid #ccc;
-    }
-    #result {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 18px;
-    }
-  </style>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
   <h1>QR Code Scanner</h1>
-  <div id="qr-reader"></div>
-  <div id="result"></div>
-
-  <!-- Include the QR code scanning library -->
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <div id="qr-reader" style="width:500px;"></div>
 
   <script>
-    // Function to initialize the QR code scanner
     const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      // Display the scanned QR code result
-      document.getElementById('result').innerHTML = `<strong>Scanned Result:</strong> ${decodedText}`;
-
-      // Check if the result is a valid URL and open it in the same window
-      if (isValidURL(decodedText)) {
-        window.location.href = decodedText;  // Open URL in the same window
-      } else {
-        alert("QR code does not contain a valid URL.");
-      }
+      console.log("QR Code Result:", decodedText);
     };
 
     const qrCodeErrorCallback = (errorMessage) => {
-      console.error("QR Code scanning error: ", errorMessage);
-      alert("Error scanning QR code: " + errorMessage);
+      console.log("QR Code Error:", errorMessage);
     };
 
-    // Initialize the QR Code scanner
     const html5QrCode = new Html5Qrcode("qr-reader");
 
-    // Start the QR code scanner
     html5QrCode.start(
-      { facingMode: "environment" },  // Use the back camera (or front camera as needed)
-      { fps: 10, qrbox: 250 },        // Adjust FPS and size of the scanning box
+      { facingMode: "environment" }, // Using back camera
+      { fps: 10, qrbox: 250 },       // 10 FPS and 250px scanning box
       qrCodeSuccessCallback,
       qrCodeErrorCallback
-    ).catch(err => {
+    ).catch((err) => {
       console.error("Error starting QR scanner:", err);
-      alert("Error initializing the QR scanner: " + err);
     });
-
-    // Helper function to check if a string is a valid URL
-    function isValidURL(str) {
-      const pattern = new RegExp('^(https?:\\/\\/)?([\\w\\d\\-]+\\.)+[\\w\\d\\-]+(\\/\\S*)?$');
-      return pattern.test(str);
-    }
-
-    // Debugging logs
-    console.log("QR Code Scanner initialized successfully.");
-
-    // Request camera access explicitly (testing purpose)
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
-        console.log('Camera access granted.');
-        const videoElement = document.querySelector('video');
-        videoElement.srcObject = stream;
-      })
-      .catch(err => {
-        console.error('Error accessing camera: ', err);
-        alert("Camera access denied: " + err.message);
-      });
   </script>
 </body>
 </html>
