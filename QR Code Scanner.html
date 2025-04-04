@@ -30,7 +30,8 @@
   <video id="video" autoplay playsinline></video>
   <div id="result"></div>
 
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <!-- Load html5-qrcode from an alternative CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <script>
     let videoStream = null;
     const videoElement = document.getElementById('video');
@@ -92,17 +93,23 @@
 
     // Function to initialize QR code scanner
     function initializeQRCodeScanner(stream) {
-      const html5QrCode = new Html5Qrcode("video");
+      // Ensure that html5-qrcode is available before usage
+      if (typeof Html5Qrcode !== 'undefined') {
+        const html5QrCode = new Html5Qrcode("video");
 
-      html5QrCode.start(
-        { facingMode: "environment", deviceId: cameraSelect.value }, // Use the selected camera
-        { fps: 10, qrbox: 250 },  // Adjust FPS and size of the scanning box
-        qrCodeSuccessCallback,
-        qrCodeErrorCallback
-      ).catch(err => {
-        console.error("Error starting QR scanner:", err);
-        resultDiv.innerHTML = "Error starting QR scanner.";
-      });
+        html5QrCode.start(
+          { facingMode: "environment", deviceId: cameraSelect.value }, // Use the selected camera
+          { fps: 10, qrbox: 250 },  // Adjust FPS and size of the scanning box
+          qrCodeSuccessCallback,
+          qrCodeErrorCallback
+        ).catch(err => {
+          console.error("Error starting QR scanner:", err);
+          resultDiv.innerHTML = "Error starting QR scanner.";
+        });
+      } else {
+        console.error("Html5Qrcode is not loaded.");
+        resultDiv.innerHTML = "Error: Html5Qrcode is not loaded.";
+      }
     }
 
     // QR code success callback
