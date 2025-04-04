@@ -28,7 +28,7 @@
   <div id="qr-result">Scanning...</div>
 
   <!-- Load the html5-qrcode library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     const resultEl = document.getElementById('qr-result');
@@ -38,11 +38,13 @@
       console.log("QR Code scanned: ", decodedText);
       resultEl.innerText = "Result: " + decodedText;
 
-      // You could also send the result to a parent iframe:
-      window.parent.postMessage({ type: "qrCode", data: decodedText }, "*");
-
-      // Or redirect:
-      // window.location.href = decodedText;
+      // ✅ Send the result back to the opener (Wix site)
+      if (window.opener) {
+        window.opener.postMessage({ type: "qrCode", data: decodedText }, "*");
+        window.close(); // Optional: close the popup after scanning
+      } else {
+        console.warn("No window.opener found. Not opened from a popup.");
+      }
     }
 
     qrReader.start(
@@ -53,7 +55,6 @@
       },
       onScanSuccess,
       (errorMessage) => {
-        // Optional scan error handling
         console.warn("QR Scan Error:", errorMessage);
       }
     ).catch(err => {
