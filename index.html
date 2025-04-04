@@ -20,12 +20,11 @@
       margin-top: 20px;
       font-size: 1.2em;
     }
-    #url-result {
+    #qr-iframe {
+      width: 100%;
+      height: 600px;
       margin-top: 20px;
-      font-size: 1.2em;
-      color: #007bff;
-      text-decoration: underline;
-      cursor: pointer;
+      border: none;
     }
   </style>
 </head>
@@ -33,47 +32,43 @@
   <h1>QR Code Scanner</h1>
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
-  <div id="url-result" style="display: none;" onclick="openUrl()">Click to open the URL</div>
+
+  <!-- A section for displaying the URL as an iframe -->
+  <iframe id="qr-iframe" src="" style="display:none;"></iframe>
 
   <!-- Load the html5-qrcode library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     const resultEl = document.getElementById('qr-result');
-    const urlResultEl = document.getElementById('url-result');
     const qrReader = new Html5Qrcode("qr-reader");
+    const iframe = document.getElementById('qr-iframe');
 
-    // Handle scan success
     function onScanSuccess(decodedText, decodedResult) {
       console.log("QR Code scanned: ", decodedText);
-      resultEl.innerText = "Scanned Result: " + decodedText;
+      resultEl.innerText = "Result: " + decodedText;
 
-      // Show the result and set the URL to open
-      urlResultEl.style.display = 'block';
-      urlResultEl.innerText = "Click to open: " + decodedText;
+      // Instead of redirecting, we load the URL below the camera
+      iframe.src = decodedText; // Load the URL into the iframe
+      iframe.style.display = "block"; // Make the iframe visible
 
-      // Store the URL in the dataset for later use
-      urlResultEl.dataset.url = decodedText;
-
-      // Automatically redirect to the scanned URL
-      window.location.href = decodedText;
+      // Optionally, you can hide the scanning UI after success
+      qrReader.stop().then(() => {
+        console.log("QR scanner stopped.");
+      }).catch((err) => {
+        console.error("Failed to stop the QR scanner:", err);
+      });
     }
 
-    // Function to open the URL manually when clicked
-    function openUrl() {
-      const url = urlResultEl.dataset.url;
-      window.location.href = url;  // Open the URL in the same window
-    }
-
-    // Start QR code scanner
     qrReader.start(
-      { facingMode: "environment" }, // Use rear camera
+      { facingMode: "environment" },
       {
-        fps: 10, // Frames per second
-        qrbox: { width: 250, height: 250 } // Size of the scanning box
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
       },
-      onScanSuccess, // Success callback
-      (errorMessage) => { // Error callback
+      onScanSuccess,
+      (errorMessage) => {
+        // Optional scan error handling
         console.warn("QR Scan Error:", errorMessage);
       }
     ).catch(err => {
