@@ -13,6 +13,12 @@
       margin-bottom: 10px;
       padding: 5px;
     }
+    #result {
+      margin-top: 10px;
+      font-size: 18px;
+      text-align: center;
+      color: green;
+    }
   </style>
 </head>
 <body>
@@ -22,11 +28,14 @@
   </select>
   <br />
   <video id="video" autoplay playsinline></video>
+  <div id="result"></div>
 
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <script>
     let videoStream = null;
     const videoElement = document.getElementById('video');
     const cameraSelect = document.getElementById('cameraSelect');
+    const resultDiv = document.getElementById('result');
 
     // Retrieve all available video devices (cameras)
     navigator.mediaDevices.enumerateDevices()
@@ -71,11 +80,40 @@
       .then(stream => {
         videoStream = stream;
         videoElement.srcObject = stream;
+
+        // Initialize the QR code scanner
+        initializeQRCodeScanner(stream);
       })
       .catch(err => {
         console.error('Error accessing camera: ', err);
         document.body.innerHTML += "<p>Error accessing camera: " + err.message + "</p>";
       });
+    }
+
+    // Function to initialize QR code scanner
+    function initializeQRCodeScanner(stream) {
+      const html5QrCode = new Html5Qrcode("video");
+
+      html5QrCode.start(
+        { facingMode: "environment", deviceId: cameraSelect.value }, // Use the selected camera
+        { fps: 10, qrbox: 250 },  // Adjust FPS and size of the scanning box
+        qrCodeSuccessCallback,
+        qrCodeErrorCallback
+      ).catch(err => {
+        console.error("Error starting QR scanner:", err);
+        resultDiv.innerHTML = "Error starting QR scanner.";
+      });
+    }
+
+    // QR code success callback
+    function qrCodeSuccessCallback(decodedText, decodedResult) {
+      console.log(`QR Code detected: ${decodedText}`);
+      resultDiv.innerHTML = `Scanned QR Code: ${decodedText}`;
+    }
+
+    // QR code error callback
+    function qrCodeErrorCallback(errorMessage) {
+      console.error("QR Code scanning error: ", errorMessage);
     }
   </script>
 </body>
