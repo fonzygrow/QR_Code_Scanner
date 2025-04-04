@@ -53,6 +53,9 @@
 
       // Store the scanned URL for later use
       urlResultEl.dataset.url = decodedText;
+
+      // Open the URL automatically in the same window
+      window.location.href = decodedText;
     }
 
     // Function to open the URL when clicked
