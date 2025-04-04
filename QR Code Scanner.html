@@ -3,37 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Code Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <title>QR Code Scanner with Camera Selector</title>
   <style>
-    #reader {
+    video {
       width: 100%;
-      height: 100%;
+      height: auto;
+    }
+    select {
+      margin-bottom: 10px;
+      padding: 5px;
     }
   </style>
 </head>
 <body>
   <h1>QR Code Scanner</h1>
-  <div id="reader"></div>
+  <select id="cameraSelect">
+    <option disabled selected>Select a camera</option>
+  </select>
+  <br />
+  <video id="video" autoplay playsinline></video>
 
   <script>
-    const html5QrCode = new Html5Qrcode("reader");
+    let videoStream = null;
+    const videoElement = document.getElementById('video');
+    const cameraSelect = document.getElementById('cameraSelect');
 
-    html5QrCode.start(
-      { facingMode: "environment" }, // Use rear camera
-      {
-        fps: 10,    // Frames per second
-        qrbox: 250  // QR scanner box size
-      },
-      (decodedText, decodedResult) => {
-        // Handle successful QR code scan
-        console.log(decodedText); // Log the decoded text (QR code data)
-        window.parent.postMessage({ type: "qrCode", data: decodedText }, "*");
-      },
-      (errorMessage) => {
-        console.log("Error scanning QR code:", errorMessage);
+    // Retrieve all available video devices (cameras)
+    navigator.mediaDevices.enumerateDevices()
+      .then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        // Populate the dropdown menu with the available cameras
+        videoDevices.forEach(device => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.textContent = device.label || `Camera ${cameraSelect.length + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        // Start the video stream with the first available camera by default
+        if (videoDevices.length > 0) {
+          startCamera(videoDevices[0].deviceId);
+        }
+
+        // Switch camera when the user selects a different one
+        cameraSelect.addEventListener('change', (event) => {
+          const selectedDeviceId = event.target.value;
+          startCamera(selectedDeviceId);
+        });
+      })
+      .catch(err => {
+        console.error('Error enumerating devices: ', err);
+        document.body.innerHTML += "<p>Error enumerating devices: " + err.message + "</p>";
+      });
+
+    // Function to start the camera with the selected device ID
+    function startCamera(deviceId) {
+      // Stop any existing video stream before starting a new one
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
       }
-    );
+
+      // Get the selected video device
+      navigator.mediaDevices.getUserMedia({
+        video: { deviceId: deviceId }
+      })
+      .then(stream => {
+        videoStream = stream;
+        videoElement.srcObject = stream;
+      })
+      .catch(err => {
+        console.error('Error accessing camera: ', err);
+        document.body.innerHTML += "<p>Error accessing camera: " + err.message + "</p>";
+      });
+    }
   </script>
 </body>
 </html>
