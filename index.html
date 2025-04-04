@@ -43,35 +43,37 @@
     const urlResultEl = document.getElementById('url-result');
     const qrReader = new Html5Qrcode("qr-reader");
 
+    // Handle scan success
     function onScanSuccess(decodedText, decodedResult) {
       console.log("QR Code scanned: ", decodedText);
-      resultEl.innerText = "Result: " + decodedText;
+      resultEl.innerText = "Scanned Result: " + decodedText;
 
-      // Show the URL result below the scanner
+      // Show the result and set the URL to open
       urlResultEl.style.display = 'block';
       urlResultEl.innerText = "Click to open: " + decodedText;
 
-      // Store the scanned URL for later use
+      // Store the URL in the dataset for later use
       urlResultEl.dataset.url = decodedText;
 
-      // Open the URL automatically in the same window
+      // Automatically redirect to the scanned URL
       window.location.href = decodedText;
     }
 
-    // Function to open the URL when clicked
+    // Function to open the URL manually when clicked
     function openUrl() {
       const url = urlResultEl.dataset.url;
-      window.location.href = url; // Open the URL in the same window
+      window.location.href = url;  // Open the URL in the same window
     }
 
+    // Start QR code scanner
     qrReader.start(
-      { facingMode: "environment" },
+      { facingMode: "environment" }, // Use rear camera
       {
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
+        fps: 10, // Frames per second
+        qrbox: { width: 250, height: 250 } // Size of the scanning box
       },
-      onScanSuccess,
-      (errorMessage) => {
+      onScanSuccess, // Success callback
+      (errorMessage) => { // Error callback
         console.warn("QR Scan Error:", errorMessage);
       }
     ).catch(err => {
