@@ -20,31 +20,45 @@
       margin-top: 20px;
       font-size: 1.2em;
     }
+    #url-result {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #007bff;
+      text-decoration: underline;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>QR Code Scanner</h1>
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
+  <div id="url-result" style="display: none;" onclick="openUrl()">Click to open the URL</div>
 
   <!-- Load the html5-qrcode library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     const resultEl = document.getElementById('qr-result');
+    const urlResultEl = document.getElementById('url-result');
     const qrReader = new Html5Qrcode("qr-reader");
 
     function onScanSuccess(decodedText, decodedResult) {
       console.log("QR Code scanned: ", decodedText);
       resultEl.innerText = "Result: " + decodedText;
 
-      // ✅ Send the result back to the opener (Wix site)
-      if (window.opener) {
-        window.opener.postMessage({ type: "qrCode", data: decodedText }, "*");
-        window.close(); // Optional: close the popup after scanning
-      } else {
-        console.warn("No window.opener found. Not opened from a popup.");
-      }
+      // Show the URL result below the scanner
+      urlResultEl.style.display = 'block';
+      urlResultEl.innerText = "Click to open: " + decodedText;
+
+      // Store the scanned URL for later use
+      urlResultEl.dataset.url = decodedText;
+    }
+
+    // Function to open the URL when clicked
+    function openUrl() {
+      const url = urlResultEl.dataset.url;
+      window.location.href = url; // Open the URL in the same window
     }
 
     qrReader.start(
