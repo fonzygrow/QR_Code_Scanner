@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QR Code Scanner</title>
+  <title>Family Engagement Sign-in</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       margin: 0;
       padding: 20px;
-      background-color: #f9f9f9;
+      background-color: #d9d9d9;
     }
     #qr-reader {
       width: 300px;
@@ -32,7 +32,7 @@
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 1em;
-      background-color: #007bff;
+      background-color: #4C843F;
       color: white;
       border: none;
       border-radius: 5px;
@@ -40,12 +40,12 @@
       display: none;
     }
     #scan-again:hover {
-      background-color: #0056b3;
+      background-color: #3a6931;
     }
   </style>
 </head>
 <body>
-  <h1>QR Code Scanner</h1>
+  <h1>Family Engagement Sign-in</h1>
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
@@ -89,7 +89,6 @@
       console.log("QR Code scanned: ", decodedText);
       resultEl.innerText = "Result: " + decodedText;
 
-      // Only load HTTPS URLs for safety
       if (decodedText.startsWith("https://")) {
         iframe.src = decodedText;
         iframe.style.display = "block";
@@ -98,7 +97,6 @@
         resultEl.innerText = "Scanned QR is not a valid HTTPS URL.";
       }
 
-      // Stop scanning and show scan again button
       qrReader.stop().then(() => {
         console.log("QR scanner stopped.");
         scanAgainButton.style.display = "inline-block";
