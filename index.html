@@ -22,9 +22,25 @@
     }
     #qr-iframe {
       width: 100%;
-      height: 1000px;
+      max-width: 800px;
+      height: 80vh;
       margin-top: 20px;
       border: none;
+      display: none;
+    }
+    #scan-again {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none;
+    }
+    #scan-again:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
@@ -33,48 +49,68 @@
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
+  <!-- Scan Again Button -->
+  <button id="scan-again">Scan Again</button>
+
   <!-- A section for displaying the URL as an iframe -->
-  <iframe id="qr-iframe" src="" style="display:none;"></iframe>
+  <iframe id="qr-iframe" src=""></iframe>
 
   <!-- Load the html5-qrcode library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script>
     const resultEl = document.getElementById('qr-result');
-    const qrReader = new Html5Qrcode("qr-reader");
     const iframe = document.getElementById('qr-iframe');
+    const scanAgainButton = document.getElementById('scan-again');
+    const qrReader = new Html5Qrcode("qr-reader");
+
+    function startScanner() {
+      qrReader.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        (errorMessage) => {
+          console.warn("QR Scan Error:", errorMessage);
+        }
+      ).catch(err => {
+        console.error("Failed to start QR reader:", err);
+        resultEl.innerText = "Camera access denied or not supported.";
+      });
+
+      resultEl.innerText = "Scanning...";
+      iframe.style.display = "none";
+      scanAgainButton.style.display = "none";
+    }
 
     function onScanSuccess(decodedText, decodedResult) {
       console.log("QR Code scanned: ", decodedText);
       resultEl.innerText = "Result: " + decodedText;
 
-      // Instead of redirecting, we load the URL below the camera
-      iframe.src = decodedText; // Load the URL into the iframe
-      iframe.style.display = "block"; // Make the iframe visible
+      // Only load HTTPS URLs for safety
+      if (decodedText.startsWith("https://")) {
+        iframe.src = decodedText;
+        iframe.style.display = "block";
+      } else {
+        iframe.style.display = "none";
+        resultEl.innerText = "Scanned QR is not a valid HTTPS URL.";
+      }
 
-      // Optionally, you can hide the scanning UI after success
+      // Stop scanning and show scan again button
       qrReader.stop().then(() => {
         console.log("QR scanner stopped.");
+        scanAgainButton.style.display = "inline-block";
       }).catch((err) => {
         console.error("Failed to stop the QR scanner:", err);
       });
     }
 
-    qrReader.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
-      },
-      onScanSuccess,
-      (errorMessage) => {
-        // Optional scan error handling
-        console.warn("QR Scan Error:", errorMessage);
-      }
-    ).catch(err => {
-      console.error("Failed to start QR reader:", err);
-      resultEl.innerText = "Camera access denied or not supported.";
-    });
+    scanAgainButton.addEventListener('click', startScanner);
+
+    // Start scanning on page load
+    startScanner();
   </script>
 </body>
 </html>
