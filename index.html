@@ -28,7 +28,7 @@
       border: none;
       display: none;
     }
-    #scan-again {
+    .button {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 1em;
@@ -39,34 +39,46 @@
       cursor: pointer;
       display: none;
     }
-    #scan-again:hover {
+    .button:hover {
       background-color: #3a6931;
+    }
+    #camera-select {
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 1em;
     }
   </style>
 </head>
 <body>
   <h1>Family Engagement Sign-in</h1>
+  
+  <!-- Camera Selection -->
+  <select id="camera-select"></select>
+  
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
-  <!-- Scan Again Button -->
-  <button id="scan-again">Scan Again</button>
+  <!-- Buttons -->
+  <button id="scan-again" class="button">Scan Again</button>
+  <a id="manual-sign-in" class="button" href="https://google.com" target="_blank" style="text-decoration: none; text-align: center;">Manually Sign In</a>
 
-  <!-- A section for displaying the URL as an iframe -->
+  <!-- Iframe to show URL -->
   <iframe id="qr-iframe" src=""></iframe>
 
-  <!-- Load the html5-qrcode library -->
+  <!-- QR code scanner script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-
   <script>
     const resultEl = document.getElementById('qr-result');
     const iframe = document.getElementById('qr-iframe');
     const scanAgainButton = document.getElementById('scan-again');
+    const manualSignInButton = document.getElementById('manual-sign-in');
+    const cameraSelect = document.getElementById('camera-select');
     const qrReader = new Html5Qrcode("qr-reader");
+    let currentCameraId = null;
 
-    function startScanner() {
+    function startScanner(cameraId) {
       qrReader.start(
-        { facingMode: "environment" },
+        { deviceId: { exact: cameraId } },
         {
           fps: 10,
           qrbox: { width: 250, height: 250 }
@@ -83,6 +95,7 @@
       resultEl.innerText = "Scanning...";
       iframe.style.display = "none";
       scanAgainButton.style.display = "none";
+      manualSignInButton.style.display = "inline-block";
     }
 
     function onScanSuccess(decodedText, decodedResult) {
@@ -105,10 +118,44 @@
       });
     }
 
-    scanAgainButton.addEventListener('click', startScanner);
+    scanAgainButton.addEventListener('click', () => {
+      if (currentCameraId) {
+        startScanner(currentCameraId);
+      }
+    });
 
-    // Start scanning on page load
-    startScanner();
+    cameraSelect.addEventListener('change', () => {
+      const selectedId = cameraSelect.value;
+      if (selectedId !== currentCameraId) {
+        qrReader.stop().then(() => {
+          currentCameraId = selectedId;
+          startScanner(currentCameraId);
+        }).catch((err) => {
+          console.error("Error switching camera:", err);
+        });
+      }
+    });
+
+    // Load cameras and start scanning with default
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        cameras.forEach((camera, index) => {
+          const option = document.createElement("option");
+          option.value = camera.id;
+          option.text = camera.label || `Camera ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        currentCameraId = cameras[0].id;
+        cameraSelect.value = currentCameraId;
+        startScanner(currentCameraId);
+      } else {
+        resultEl.innerText = "No cameras found.";
+      }
+    }).catch(err => {
+      console.error("Error getting cameras:", err);
+      resultEl.innerText = "Camera access error.";
+    });
   </script>
 </body>
 </html>
