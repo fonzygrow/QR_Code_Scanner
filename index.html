@@ -51,21 +51,22 @@
 </head>
 <body>
   <h1>Family Engagement Sign-in</h1>
-  
+
   <!-- Camera Selection -->
   <select id="camera-select"></select>
-  
+
+  <!-- QR Reader Container -->
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
-  <!-- Buttons -->
+  <!-- Action Buttons -->
   <button id="scan-again" class="button">Scan Again</button>
-  <a id="manual-sign-in" class="button" href="https://google.com" target="_blank" style="text-decoration: none; text-align: center;">Manually Sign In</a>
+  <button id="manual-sign-in" class="button">Manually Sign In</button>
 
-  <!-- Iframe to show URL -->
+  <!-- Iframe for scanned content -->
   <iframe id="qr-iframe" src=""></iframe>
 
-  <!-- QR code scanner script -->
+  <!-- QR Scanner Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script>
     const resultEl = document.getElementById('qr-result');
@@ -98,7 +99,7 @@
       manualSignInButton.style.display = "inline-block";
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
       console.log("QR Code scanned: ", decodedText);
       resultEl.innerText = "Result: " + decodedText;
 
@@ -136,7 +137,20 @@
       }
     });
 
-    // Load cameras and start scanning with default
+    manualSignInButton.addEventListener('click', () => {
+      iframe.src = "https://google.com";
+      iframe.style.display = "block";
+      resultEl.innerText = "Manual Sign-In: https://google.com";
+
+      qrReader.stop().then(() => {
+        console.log("QR scanner stopped for manual sign-in.");
+        scanAgainButton.style.display = "inline-block";
+      }).catch((err) => {
+        console.error("Failed to stop scanner during manual sign-in:", err);
+      });
+    });
+
+    // Initialize cameras and scanner
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
         cameras.forEach((camera, index) => {
