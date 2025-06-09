@@ -71,42 +71,32 @@
     const qrReader = new Html5Qrcode("qr-reader");
     let currentCameraId = null;
 
-    async function startScanner(cameraId) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { exact: cameraId },
-            advanced: [
-              { focusMode: "continuous" },
-              { zoom: 2.0 } // optional: helps some webcams
-            ]
+    function startScanner(cameraId) {
+      qrReader.start(
+        { deviceId: { exact: cameraId } },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            deviceId: cameraId,
+            focusMode: "continuous", // Most modern browsers will honor this
+            zoom: 2.0 // optional: try to zoom to improve clarity
           }
-        });
-
-        if (qrReader._isScanning) {
-          await qrReader.stop();
+        },
+        onScanSuccess,
+        (errorMessage) => {
+          console.warn("QR Scan Error:", errorMessage);
         }
-
-        await qrReader.start(
-          stream,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-          },
-          onScanSuccess,
-          (errorMessage) => {
-            console.warn("QR Scan Error:", errorMessage);
-          }
-        );
-
+      ).then(() => {
         resultEl.innerText = "Scanning...";
         iframe.style.display = "none";
         scanAgainButton.style.display = "none";
         manualSignInButton.style.display = "inline-block";
-      } catch (err) {
-        console.error("Failed to access camera or apply constraints:", err);
+      }).catch(err => {
+        console.error("Failed to start QR reader:", err);
         resultEl.innerText = "Camera access denied or not supported.";
-      }
+      });
     }
 
     function onScanSuccess(decodedText) {
@@ -122,10 +112,7 @@
       }
 
       qrReader.stop().then(() => {
-        console.log("QR scanner stopped.");
         scanAgainButton.style.display = "inline-block";
-      }).catch((err) => {
-        console.error("Failed to stop the QR scanner:", err);
       });
     }
 
@@ -141,8 +128,6 @@
         qrReader.stop().then(() => {
           currentCameraId = selectedId;
           startScanner(currentCameraId);
-        }).catch((err) => {
-          console.error("Error switching camera:", err);
         });
       }
     });
@@ -153,22 +138,18 @@
       resultEl.innerText = "Manual Sign-In: https://forms.office.com/r/bGDRScMXHQ";
 
       qrReader.stop().then(() => {
-        console.log("QR scanner stopped for manual sign-in.");
         scanAgainButton.style.display = "inline-block";
-      }).catch((err) => {
-        console.error("Failed to stop scanner during manual sign-in:", err);
       });
     });
 
     Html5Qrcode.getCameras().then(cameras => {
-      if (cameras && cameras.length) {
-        cameras.forEach((camera, index) => {
+      if (cameras.length) {
+        cameras.forEach((camera, i) => {
           const option = document.createElement("option");
           option.value = camera.id;
-          option.text = camera.label || `Camera ${index + 1}`;
+          option.text = camera.label || `Camera ${i + 1}`;
           cameraSelect.appendChild(option);
         });
-
         currentCameraId = cameras[0].id;
         cameraSelect.value = currentCameraId;
         startScanner(currentCameraId);
@@ -176,7 +157,7 @@
         resultEl.innerText = "No cameras found.";
       }
     }).catch(err => {
-      console.error("Error getting cameras:", err);
+      console.error("Camera access error:", err);
       resultEl.innerText = "Camera access error.";
     });
   </script>
