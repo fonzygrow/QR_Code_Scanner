@@ -24,7 +24,7 @@
       width: 100%;
       max-width: 800px;
       height: 80vh;
-      margin: 20px auto 0 auto; /* Centered */
+      margin: 20px auto 0 auto;
       border: none;
       display: none;
     }
@@ -52,21 +52,15 @@
 <body>
   <h1>Family Engagement Sign-in</h1>
 
-  <!-- Camera Selection -->
   <select id="camera-select"></select>
-
-  <!-- QR Reader -->
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
-  <!-- Action Buttons -->
   <button id="scan-again" class="button">Scan Again</button>
   <button id="manual-sign-in" class="button">Manually Sign In</button>
 
-  <!-- Iframe for scanned content -->
   <iframe id="qr-iframe" src=""></iframe>
 
-  <!-- QR Scanner Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script>
     const resultEl = document.getElementById('qr-result');
@@ -88,7 +82,31 @@
         (errorMessage) => {
           console.warn("QR Scan Error:", errorMessage);
         }
-      ).catch(err => {
+      ).then(() => {
+        // Apply 2x zoom if supported
+        navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: cameraId } }
+        }).then(stream => {
+          const [track] = stream.getVideoTracks();
+          const capabilities = track.getCapabilities();
+
+          if (capabilities.zoom) {
+            const constraints = { advanced: [{ zoom: 2 }] };
+            track.applyConstraints(constraints).then(() => {
+              console.log("Zoom applied.");
+            }).catch(err => {
+              console.warn("Zoom not supported or failed:", err);
+            });
+          } else {
+            console.warn("Zoom not supported on this camera.");
+          }
+
+          // Stop temporary stream used just for zoom
+          track.stop();
+        }).catch(err => {
+          console.error("Error accessing camera for zoom:", err);
+        });
+      }).catch(err => {
         console.error("Failed to start QR reader:", err);
         resultEl.innerText = "Camera access denied or not supported.";
       });
@@ -150,7 +168,7 @@
       });
     });
 
-    // Initialize cameras and scanner
+    // Load camera options
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
         cameras.forEach((camera, index) => {
