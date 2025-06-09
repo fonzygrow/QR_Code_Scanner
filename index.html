@@ -89,6 +89,8 @@
           if (video && video.srcObject) {
             const [track] = video.srcObject.getVideoTracks();
             const capabilities = track.getCapabilities();
+            console.log("Camera capabilities:", capabilities); // Log the capabilities
+
             if (capabilities.zoom) {
               track.applyConstraints({ advanced: [{ zoom: 2 }] }).then(() => {
                 console.log("Zoom applied successfully.");
@@ -181,6 +183,20 @@
       console.error("Error getting cameras:", err);
       resultEl.innerText = "Camera access error.";
     });
+
+    // Test for camera capabilities, including zoom support
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        const [track] = stream.getVideoTracks();
+        const capabilities = track.getCapabilities();
+        console.log("Camera capabilities:", capabilities); // Log the capabilities
+
+        // Optional: clean up
+        track.stop();
+      })
+      .catch(error => {
+        console.error("Could not get camera capabilities:", error);
+      });
   </script>
 </body>
 </html>
