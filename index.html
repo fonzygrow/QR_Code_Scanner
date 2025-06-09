@@ -24,7 +24,7 @@
       width: 100%;
       max-width: 800px;
       height: 80vh;
-      margin: 20px auto 0 auto;
+      margin: 20px auto 0 auto; /* Centered */
       border: none;
       display: none;
     }
@@ -52,15 +52,21 @@
 <body>
   <h1>Family Engagement Sign-in</h1>
 
+  <!-- Camera Selection -->
   <select id="camera-select"></select>
+
+  <!-- QR Reader -->
   <div id="qr-reader"></div>
   <div id="qr-result">Scanning...</div>
 
+  <!-- Action Buttons -->
   <button id="scan-again" class="button">Scan Again</button>
   <button id="manual-sign-in" class="button">Manually Sign In</button>
 
+  <!-- Iframe for scanned content -->
   <iframe id="qr-iframe" src=""></iframe>
 
+  <!-- QR Scanner Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script>
     const resultEl = document.getElementById('qr-result');
@@ -76,27 +82,21 @@
         { deviceId: { exact: cameraId } },
         {
           fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            deviceId: cameraId,
-            focusMode: "continuous", // Most modern browsers will honor this
-            zoom: 2.0 // optional: try to zoom to improve clarity
-          }
+          qrbox: { width: 250, height: 250 }
         },
         onScanSuccess,
         (errorMessage) => {
           console.warn("QR Scan Error:", errorMessage);
         }
-      ).then(() => {
-        resultEl.innerText = "Scanning...";
-        iframe.style.display = "none";
-        scanAgainButton.style.display = "none";
-        manualSignInButton.style.display = "inline-block";
-      }).catch(err => {
+      ).catch(err => {
         console.error("Failed to start QR reader:", err);
         resultEl.innerText = "Camera access denied or not supported.";
       });
+
+      resultEl.innerText = "Scanning...";
+      iframe.style.display = "none";
+      scanAgainButton.style.display = "none";
+      manualSignInButton.style.display = "inline-block";
     }
 
     function onScanSuccess(decodedText) {
@@ -112,7 +112,10 @@
       }
 
       qrReader.stop().then(() => {
+        console.log("QR scanner stopped.");
         scanAgainButton.style.display = "inline-block";
+      }).catch((err) => {
+        console.error("Failed to stop the QR scanner:", err);
       });
     }
 
@@ -128,6 +131,8 @@
         qrReader.stop().then(() => {
           currentCameraId = selectedId;
           startScanner(currentCameraId);
+        }).catch((err) => {
+          console.error("Error switching camera:", err);
         });
       }
     });
@@ -138,18 +143,23 @@
       resultEl.innerText = "Manual Sign-In: https://forms.office.com/r/bGDRScMXHQ";
 
       qrReader.stop().then(() => {
+        console.log("QR scanner stopped for manual sign-in.");
         scanAgainButton.style.display = "inline-block";
+      }).catch((err) => {
+        console.error("Failed to stop scanner during manual sign-in:", err);
       });
     });
 
+    // Initialize cameras and scanner
     Html5Qrcode.getCameras().then(cameras => {
-      if (cameras.length) {
-        cameras.forEach((camera, i) => {
+      if (cameras && cameras.length) {
+        cameras.forEach((camera, index) => {
           const option = document.createElement("option");
           option.value = camera.id;
-          option.text = camera.label || `Camera ${i + 1}`;
+          option.text = camera.label || `Camera ${index + 1}`;
           cameraSelect.appendChild(option);
         });
+
         currentCameraId = cameras[0].id;
         cameraSelect.value = currentCameraId;
         startScanner(currentCameraId);
@@ -157,7 +167,7 @@
         resultEl.innerText = "No cameras found.";
       }
     }).catch(err => {
-      console.error("Camera access error:", err);
+      console.error("Error getting cameras:", err);
       resultEl.innerText = "Camera access error.";
     });
   </script>
