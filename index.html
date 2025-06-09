@@ -75,7 +75,7 @@
       qrReader.start(
         { deviceId: { exact: cameraId } },
         {
-          fps: 30,
+          fps: 10,
           qrbox: { width: 250, height: 250 }
         },
         onScanSuccess,
@@ -83,29 +83,23 @@
           console.warn("QR Scan Error:", errorMessage);
         }
       ).then(() => {
-        // Apply 2x zoom if supported
-        navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: cameraId } }
-        }).then(stream => {
-          const [track] = stream.getVideoTracks();
-          const capabilities = track.getCapabilities();
-
-          if (capabilities.zoom) {
-            const constraints = { advanced: [{ zoom: 6 }] };
-            track.applyConstraints(constraints).then(() => {
-              console.log("Zoom applied.");
-            }).catch(err => {
-              console.warn("Zoom not supported or failed:", err);
-            });
-          } else {
-            console.warn("Zoom not supported on this camera.");
+        // Apply 2x zoom directly to the scanner's video track
+        setTimeout(() => {
+          const video = document.querySelector('#qr-reader video');
+          if (video && video.srcObject) {
+            const [track] = video.srcObject.getVideoTracks();
+            const capabilities = track.getCapabilities();
+            if (capabilities.zoom) {
+              track.applyConstraints({ advanced: [{ zoom: 2 }] }).then(() => {
+                console.log("Zoom applied successfully.");
+              }).catch(err => {
+                console.warn("Failed to apply zoom:", err);
+              });
+            } else {
+              console.warn("Zoom not supported on this camera.");
+            }
           }
-
-          // Stop temporary stream used just for zoom
-          track.stop();
-        }).catch(err => {
-          console.error("Error accessing camera for zoom:", err);
-        });
+        }, 500); // Slight delay to ensure video is attached
       }).catch(err => {
         console.error("Failed to start QR reader:", err);
         resultEl.innerText = "Camera access denied or not supported.";
@@ -168,7 +162,6 @@
       });
     });
 
-    // Load camera options
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
         cameras.forEach((camera, index) => {
