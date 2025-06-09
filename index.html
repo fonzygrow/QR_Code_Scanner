@@ -75,7 +75,7 @@
       qrReader.start(
         { deviceId: { exact: cameraId } },
         {
-          fps: 10,
+          fps: 30,
           qrbox: { width: 250, height: 250 }
         },
         onScanSuccess,
@@ -91,7 +91,7 @@
           const capabilities = track.getCapabilities();
 
           if (capabilities.zoom) {
-            const constraints = { advanced: [{ zoom: 2 }] };
+            const constraints = { advanced: [{ zoom: 6 }] };
             track.applyConstraints(constraints).then(() => {
               console.log("Zoom applied.");
             }).catch(err => {
