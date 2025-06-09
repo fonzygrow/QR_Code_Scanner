@@ -77,26 +77,35 @@
     const qrReader = new Html5Qrcode("qr-reader");
     let currentCameraId = null;
 
-    function startScanner(cameraId) {
-      qrReader.start(
-        { deviceId: { exact: cameraId } },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
-        },
-        onScanSuccess,
-        (errorMessage) => {
-          console.warn("QR Scan Error:", errorMessage);
+    async function startScanner(cameraId) {
+      const constraints = {
+        video: {
+          deviceId: { exact: cameraId },
+          advanced: [{ focusMode: "continuous" }]
         }
-      ).catch(err => {
+      };
+
+      try {
+        await qrReader.start(
+          constraints,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          onScanSuccess,
+          (errorMessage) => {
+            console.warn("QR Scan Error:", errorMessage);
+          }
+        );
+
+        resultEl.innerText = "Scanning...";
+        iframe.style.display = "none";
+        scanAgainButton.style.display = "none";
+        manualSignInButton.style.display = "inline-block";
+      } catch (err) {
         console.error("Failed to start QR reader:", err);
         resultEl.innerText = "Camera access denied or not supported.";
-      });
-
-      resultEl.innerText = "Scanning...";
-      iframe.style.display = "none";
-      scanAgainButton.style.display = "none";
-      manualSignInButton.style.display = "inline-block";
+      }
     }
 
     function onScanSuccess(decodedText) {
