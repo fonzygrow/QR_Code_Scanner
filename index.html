@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Family Engagement Sign-in</title>
+  <title>Arvin Family Engagement Sign-in</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -154,7 +154,7 @@
     manualSignInButton.addEventListener('click', () => {
       iframe.src = "https://forms.office.com/r/bGDRScMXHQ";
       iframe.style.display = "block";
-      resultEl.innerText = "Manual Sign-In: https://forms.office.com/r/bGDRScMXHQ";
+      resultEl.innerText = "Manual Sign-In:";
 
       qrReader.stop().then(() => {
         console.log("QR scanner stopped for manual sign-in.");
@@ -200,3 +200,4 @@
   </script>
 </body>
 </html>
+
