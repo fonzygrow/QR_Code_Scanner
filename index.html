@@ -80,16 +80,18 @@
       z-index: 999;
     }
 
-    #modal-box {
-      width: 90%;
-      max-width: 700px;
-      height: 80%;
-      background: white;
-      border-radius: 10px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
+#modal-box {
+  width: 360px;          /* 👈 much smaller (phone-sized) */
+  height: 600px;         /* 👈 controls vertical size */
+  max-width: 95vw;
+  max-height: 90vh;
+
+  background: white;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
 
     #qr-iframe {
       width: 100%;
