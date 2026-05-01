@@ -98,9 +98,8 @@
 
 <div id="scan-container">
   <select id="camera-select"></select>
-
   <div id="qr-reader"></div>
-  <div id="qr-result">Scanning...</div>
+  <div id="qr-result">Initializing camera...</div>
 
   <button id="manual-sign-in" class="button">Manually Sign In</button>
 </div>
@@ -118,71 +117,92 @@
   const exitButton = document.getElementById('exit-button');
 
   const qrReader = new Html5Qrcode("qr-reader");
-  let currentCameraId = null;
-  let audioCtx;
 
+  let currentCameraId = null;
+  let audioCtx = null;
+
+  // -------------------------
+  // Beep sound
+  // -------------------------
   function playBeep() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    if (audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
+    audioCtx.resume();
 
     const now = audioCtx.currentTime;
 
-    const notes = [
-      { freq: 660, time: 0 },
-      { freq: 880, time: 0.12 }
-    ];
-
-    notes.forEach(note => {
+    [660, 880].forEach((freq, i) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
 
       osc.connect(gain);
       gain.connect(audioCtx.destination);
 
-      osc.frequency.setValueAtTime(note.freq, now + note.time);
+      osc.frequency.value = freq;
 
-      gain.gain.setValueAtTime(0, now + note.time);
-      gain.gain.linearRampToValueAtTime(0.15, now + note.time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + 0.25);
+      gain.gain.setValueAtTime(0, now + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.15, now + i * 0.1 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25);
 
-      osc.start(now + note.time);
-      osc.stop(now + note.time + 0.3);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.3);
     });
   }
 
+  // -------------------------
+  // Start scanner (FIXED)
+  // -------------------------
   function startScanner(cameraId) {
-    qrReader.start(
-      { deviceId: { exact: cameraId } },
-      { fps: 10, qrbox: 250 },
-      onScanSuccess
-    ).catch(err => {
-      resultEl.innerText = "Camera error";
-      console.error(err);
-    });
+    const config = { fps: 10, qrbox: 250 };
 
-    resultEl.innerText = "Scanning...";
+    const cameraConfig = cameraId
+      ? { deviceId: cameraId }
+      : { facingMode: "environment" };
+
+    qrReader.start(
+      cameraConfig,
+      config,
+      onScanSuccess
+    ).then(() => {
+      resultEl.innerText = "Scanning...";
+    }).catch(err => {
+      console.error("Camera start error:", err);
+      resultEl.innerText = "Camera error - check permissions";
+    });
   }
 
+  // -------------------------
+  // QR Success
+  // -------------------------
   function onScanSuccess(decodedText) {
     playBeep();
+
+    qrReader.stop().catch(() => {});
 
     if (decodedText.startsWith("https://")) {
       enterFormMode(decodedText);
     } else {
       resultEl.innerText = "Invalid QR Code";
+      restartScanner();
     }
-
-    qrReader.stop().catch(() => {});
   }
 
+  // -------------------------
+  // Restart scanner
+  // -------------------------
+  function restartScanner() {
+    setTimeout(() => {
+      startScanner(currentCameraId);
+    }, 500);
+  }
+
+  // -------------------------
+  // Enter form
+  // -------------------------
   function enterFormMode(url) {
     document.getElementById("scan-container").style.display = "none";
-
     iframe.src = url;
     iframe.style.display = "block";
     exitButton.style.display = "block";
@@ -191,45 +211,58 @@
   function exitFormMode() {
     iframe.style.display = "none";
     iframe.src = "";
-
-    document.getElementById("scan-container").style.display = "flex";
     exitButton.style.display = "none";
 
-    if (currentCameraId) {
-      startScanner(currentCameraId);
-    }
+    document.getElementById("scan-container").style.display = "flex";
+    restartScanner();
   }
 
   exitButton.addEventListener("click", exitFormMode);
 
-  manualSignInButton.addEventListener('click', () => {
+  manualSignInButton.addEventListener("click", () => {
     enterFormMode("https://forms.office.com/r/bGDRScMXHQ");
     qrReader.stop().catch(() => {});
   });
 
-  cameraSelect.addEventListener('change', () => {
-    const selectedId = cameraSelect.value;
+  // -------------------------
+  // Camera setup (FIXED)
+  // -------------------------
+  Html5Qrcode.getCameras()
+    .then(cameras => {
+      if (!cameras || cameras.length === 0) {
+        resultEl.innerText = "No cameras found";
+        return;
+      }
 
-    qrReader.stop().then(() => {
-      currentCameraId = selectedId;
+      cameraSelect.innerHTML = "";
+
+      cameras.forEach((camera, i) => {
+        const option = document.createElement("option");
+        option.value = camera.id;
+        option.text = camera.label || `Camera ${i + 1}`;
+        cameraSelect.appendChild(option);
+      });
+
+      currentCameraId = cameras[0].id;
+      cameraSelect.value = currentCameraId;
+
       startScanner(currentCameraId);
+    })
+    .catch(err => {
+      console.error("Camera init failed:", err);
+      resultEl.innerText = "Camera initialization failed";
+    });
+
+  cameraSelect.addEventListener("change", () => {
+    qrReader.stop().then(() => {
+      currentCameraId = cameraSelect.value;
+      startScanner(currentCameraId);
+    }).catch(() => {
+      startScanner(cameraSelect.value);
     });
   });
 
-  Html5Qrcode.getCameras().then(cameras => {
-    cameras.forEach((camera, i) => {
-      const option = document.createElement("option");
-      option.value = camera.id;
-      option.text = camera.label || `Camera ${i + 1}`;
-      cameraSelect.appendChild(option);
-    });
-
-    currentCameraId = cameras[0].id;
-    cameraSelect.value = currentCameraId;
-
-    startScanner(currentCameraId);
-  });
-
+  // Unlock audio on first tap
   document.body.addEventListener("click", () => {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
