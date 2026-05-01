@@ -80,18 +80,15 @@
       z-index: 999;
     }
 
-#modal-box {
-  width: 360px;          /* 👈 much smaller (phone-sized) */
-  height: 600px;         /* 👈 controls vertical size */
-  max-width: 95vw;
-  max-height: 90vh;
-
-  background: white;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
+    #modal-box {
+      width: 360px;
+      height: 640px;
+      background: white;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
 
     #qr-iframe {
       width: 100%;
@@ -149,9 +146,10 @@
 
   let currentCameraId = null;
   let audioCtx = null;
+  let formWatchInterval = null;
 
   // -------------------------
-  // Beep sound
+  // Beep
   // -------------------------
   function playBeep() {
     if (!audioCtx) {
@@ -181,7 +179,7 @@
   }
 
   // -------------------------
-  // Start scanner
+  // Scanner
   // -------------------------
   function startScanner(cameraId) {
     const config = { fps: 10, qrbox: 250 };
@@ -198,12 +196,12 @@
       resultEl.innerText = "Scanning...";
     }).catch(err => {
       console.error(err);
-      resultEl.innerText = "Camera error - check permissions";
+      resultEl.innerText = "Camera error";
     });
   }
 
   // -------------------------
-  // QR success
+  // QR Success
   // -------------------------
   function onScanSuccess(decodedText) {
     playBeep();
@@ -225,25 +223,65 @@
   }
 
   // -------------------------
-  // MODAL OPEN
+  // OPEN FORM
   // -------------------------
   function enterFormMode(url) {
     document.getElementById("scan-container").style.display = "none";
 
     iframe.src = url;
     modal.style.display = "flex";
+
+    startFormWatcher();
   }
 
   // -------------------------
-  // MODAL CLOSE
+  // AUTO-CLOSE WATCHER
   // -------------------------
-  function exitFormMode() {
+  function startFormWatcher() {
+    if (formWatchInterval) clearInterval(formWatchInterval);
+
+    formWatchInterval = setInterval(() => {
+      try {
+        const currentURL = iframe.contentWindow.location.href;
+
+        if (
+          currentURL.includes("responsepage") ||
+          currentURL.includes("thankyou") ||
+          currentURL.includes("forms.office.com/pages")
+        ) {
+          closeFormAutomatically();
+        }
+
+      } catch (e) {
+        // Cross-origin restriction (normal for Microsoft Forms)
+        // fallback relies on user completion timing
+      }
+    }, 1000);
+  }
+
+  // -------------------------
+  // CLOSE FORM
+  // -------------------------
+  function closeFormAutomatically() {
+    clearInterval(formWatchInterval);
+    formWatchInterval = null;
+
     iframe.src = "";
     modal.style.display = "none";
 
     document.getElementById("scan-container").style.display = "flex";
 
     restartScanner();
+  }
+
+  // -------------------------
+  // MANUAL CLOSE
+  // -------------------------
+  function exitFormMode() {
+    clearInterval(formWatchInterval);
+    formWatchInterval = null;
+
+    closeFormAutomatically();
   }
 
   exitButton.addEventListener("click", exitFormMode);
