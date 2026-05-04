@@ -296,11 +296,11 @@ manualSignInButton.addEventListener("click", () => {
 
   let formURL = "";
 
-  if (headerText === "Arvin Family Engagement") {
-    formURL = "https://forms.office.com/r/bGDRScMXHQ";
-  } else if (headerText === "Shafter Family Engagement") {
-    formURL = "https://forms.office.com/r/4BJRArLqVB";
-  }
+if (headerText.includes("Arvin")) {
+  formURL = "https://forms.office.com/r/bGDRScMXHQ";
+} else if (headerText.includes("Shafter")) {
+  formURL = "https://forms.office.com/r/4BJRArLqVB";
+}
 
   if (formURL) {
     enterFormMode(formURL);
