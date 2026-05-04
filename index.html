@@ -291,10 +291,24 @@
 
   exitButton.addEventListener("click", exitFormMode);
 
-  manualSignInButton.addEventListener("click", () => {
-    enterFormMode("https://forms.office.com/r/bGDRScMXHQ");
+manualSignInButton.addEventListener("click", () => {
+  const headerText = document.querySelector("header").innerText.trim();
+
+  let formURL = "";
+
+  if (headerText === "Arvin Family Engagement") {
+    formURL = "https://forms.office.com/r/bGDRScMXHQ";
+  } else if (headerText === "Shafter Family Engagement") {
+    formURL = "https://forms.office.com/r/4BJRArLqVB";
+  }
+
+  if (formURL) {
+    enterFormMode(formURL);
     qrReader.stop().catch(() => {});
-  });
+  } else {
+    console.warn("No matching form for header:", headerText);
+  }
+});
 
   // -------------------------
   // Camera setup
